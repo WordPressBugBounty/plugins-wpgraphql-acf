@@ -44,16 +44,15 @@ class Utils {
 				$id = absint( $node->databaseId );
 				break;
 			case $node instanceof MenuItem:
-				$id = absint( $node->menuItemId );
+				$id = absint( $node->databaseId );
 				break;
 			case $node instanceof Menu:
-				$id = 'term_' . $node->menuId;
+				$id = 'term_' . $node->databaseId;
 				break;
 			case $node instanceof User:
-				$id = 'user_' . absint( $node->userId );
+				$id = 'user_' . absint( $node->databaseId );
 				break;
 			case $node instanceof Comment:
-				// @phpstan-ignore-next-line
 				$id = 'comment_' . absint( $node->databaseId );
 				break;
 			case $node instanceof AcfOptionsPage:
@@ -136,6 +135,20 @@ class Utils {
 		if ( empty( $acf_options_pages ) || ! is_array( $acf_options_pages ) ) {
 			return $options_pages;
 		}
+
+		// For programmatically registered options pages, ACF may not preserve show_in_graphql.
+		// Allow it to be filtered to restore the value if it was set during registration.
+		$acf_options_pages = array_map(
+			static function ( $option_page ) {
+				// If show_in_graphql is not set, allow it to be filtered to restore the value
+				// This allows tests and programmatic registrations to set show_in_graphql => false
+				if ( ! isset( $option_page['show_in_graphql'] ) ) {
+					$option_page['show_in_graphql'] = apply_filters( 'wpgraphql/acf/options_page/show_in_graphql', true, $option_page );
+				}
+				return $option_page;
+			},
+			$acf_options_pages
+		);
 
 		return array_filter(
 			array_map(

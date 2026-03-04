@@ -4,7 +4,7 @@
  * Description: WPGraphQL for ACF seamlessly integrates Advanced Custom Fields with WPGraphQL.
  * Author: WPGraphQL
  * Author URI: https://www.wpgraphql.com
- * Version: 2.4.1
+ * Version: 2.5.0
  * Text Domain: wpgraphql-acf
  * Requires PHP: 7.3
  * Requires at least: 5.9
@@ -12,6 +12,8 @@
  * License: GPL-3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Requires Plugins: wp-graphql
+ * Requires WPGraphQL: 1.29
+ * WPGraphQL tested up to: 2.0.0
  *
  * @package  WPGraphQL\ACF
  */
@@ -32,7 +34,7 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 }
 
 if ( ! defined( 'WPGRAPHQL_FOR_ACF_VERSION' ) ) {
-	define( 'WPGRAPHQL_FOR_ACF_VERSION', '2.4.1' );
+	define( 'WPGRAPHQL_FOR_ACF_VERSION', '2.5.0' );
 }
 
 if ( ! defined( 'WPGRAPHQL_FOR_ACF_VERSION_WPGRAPHQL_REQUIRED_MIN_VERSION' ) ) {
@@ -53,6 +55,21 @@ if ( ! function_exists( 'graphql_acf_init' ) ) {
 		$wp_graphql_acf = new \WPGraphQLAcf();
 		add_action( 'plugins_loaded', [ $wp_graphql_acf, 'init' ], 50 );
 	}
+
+	/**
+	 * Load plugin text domain at init so translations are loaded at the correct time (WordPress 6.7+).
+	 * Prevents _load_textdomain_just_in_time "triggered too early" notice.
+	 *
+	 * @return void
+	 */
+	function graphql_acf_load_textdomain() {
+		load_plugin_textdomain(
+			'wpgraphql-acf',
+			false,
+			dirname( plugin_basename( __FILE__ ) ) . '/languages'
+		);
+	}
+	add_action( 'init', 'graphql_acf_load_textdomain', 0 );
 }
 graphql_acf_init();
 

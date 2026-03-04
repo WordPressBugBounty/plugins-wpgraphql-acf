@@ -16,7 +16,7 @@ class WPGraphQLAcf {
 	protected $admin_settings;
 
 	/**
-	 * @var array<mixed>
+	 * @var array<string>
 	 */
 	protected $plugin_load_error_messages = [];
 
@@ -26,14 +26,13 @@ class WPGraphQLAcf {
 	protected $registry;
 
 	/**
-	 * @return void
 	 * Initialize the plugin
 	 */
 	public function init(): void {
 
-		// If there are any plugin load error messages,
-		// prevent the plugin from loading and show the messages
-		if ( ! empty( $this->get_plugin_load_error_messages() ) ) {
+		// If the plugin cannot load (missing ACF, duplicate, or WPGraphQL version), show messages later.
+		// We use a boolean check here to avoid triggering translation loading before the init action (WP 6.7+).
+		if ( ! $this->can_load_plugin() ) {
 			add_action( 'admin_init', [ $this, 'show_admin_notice' ] );
 			add_action( 'graphql_init', [ $this, 'show_graphql_debug_messages' ] );
 			return;
@@ -41,12 +40,13 @@ class WPGraphQLAcf {
 
 		add_action( 'wpgraphql/acf/init', [ $this, 'init_third_party_support' ] );
 		add_action( 'admin_init', [ $this, 'init_admin_settings' ] );
-		add_action( 'after_setup_theme', [ $this, 'acf_internal_post_type_support' ] );
+		// Run on init (not after_setup_theme) so translations load at init or later (WordPress 6.7+).
+		add_action( 'init', [ $this, 'acf_internal_post_type_support' ], 20 );
 		add_action( 'graphql_register_types', [ $this, 'init_registry' ] );
 
 		add_filter( 'graphql_resolve_revision_meta_from_parent', [ $this, 'preview_support' ], 10, 4 );
 
-		add_filter( 'graphql_data_loaders', [ $this, 'register_loaders' ], 10, 2 );
+		add_filter( 'graphql_data_loader_classes', [ $this, 'register_loaders' ], 10, 2 );
 		add_filter( 'graphql_resolve_node_type', [ $this, 'resolve_acf_options_page_node' ], 10, 2 );
 		/**
 		 * This filters any field that returns the `ContentTemplate` type
@@ -54,6 +54,14 @@ class WPGraphQLAcf {
 		 */
 		add_filter( 'graphql_resolve_field', [ $this, 'page_template_resolver' ], 10, 9 );
 
+		// Fire on init so any code using translations (e.g. third party init) runs at init or later (WordPress 6.7+).
+		add_action( 'init', [ $this, 'fire_wpgraphql_acf_init' ], 15 );
+	}
+
+	/**
+	 * Fires the wpgraphql/acf/init action. Called on the init hook so translations load at init or later.
+	 */
+	public function fire_wpgraphql_acf_init(): void {
 		do_action( 'wpgraphql/acf/init' );
 	}
 
@@ -143,12 +151,12 @@ class WPGraphQLAcf {
 	 *
 	 * NOTE: this currently only works if classic editor is not being used
 	 *
-	 * @param bool   $should Whether to resolve using the parent object. Default true.
-	 * @param int    $object_id The ID of the object to resolve meta for
-	 * @param string $meta_key The key for the meta to resolve
-	 * @param bool   $single Whether a single value should be returned
+	 * @param bool    $should Whether to resolve using the parent object. Default true.
+	 * @param int     $object_id The ID of the object to resolve meta for
+	 * @param ?string $meta_key The key for the meta to resolve (null when get_post_meta is called with only object_id).
+	 * @param ?bool   $single Whether a single value should be returned
 	 */
-	public function preview_support( bool $should, int $object_id, string $meta_key, bool $single ): bool {
+	public function preview_support( bool $should, int $object_id, ?string $meta_key, ?bool $single ): bool {
 		if ( ! $this->registry instanceof Registry ) {
 			return (bool) $should;
 		}
@@ -161,8 +169,13 @@ class WPGraphQLAcf {
 		// If the block editor is being used for the post, bail early as the Block Editor doesn't
 		// properly support revisions of post meta
 		// see: https://github.com/WordPress/gutenberg/issues/16006#issuecomment-657965028
-		if ( use_block_editor_for_post( $preview_post ) ) {
+		if ( \use_block_editor_for_post( $preview_post ) ) {
 			graphql_debug( __( 'The post you are querying as a preview uses the Block Editor and saving & previewing meta is not fully supported by the block editor. This is a WordPress block editor bug. See: https://github.com/WordPress/gutenberg/issues/16006#issuecomment-657965028', 'wpgraphql-acf' ) );
+			return (bool) $should;
+		}
+
+		// When meta_key is null or empty (e.g. get_post_meta( $id ) with one argument), passthrough.
+		if ( null === $meta_key || '' === $meta_key ) {
 			return (bool) $should;
 		}
 
@@ -193,16 +206,36 @@ class WPGraphQLAcf {
 	}
 
 	/**
-	 * Empty array if the plugin can load. Array of messages if the plugin cannot load.
+	 * Whether the plugin can load. Uses only boolean checks so it is safe to call before the init action
+	 * (avoids triggering translation loading too early for WordPress 6.7+).
+	 */
+	public function can_load_plugin(): bool {
+		if ( ! class_exists( 'ACF' ) ) {
+			return false;
+		}
+		if ( class_exists( 'WPGraphQL\ACF\ACF' ) ) {
+			return false;
+		}
+		if ( ! class_exists( 'WPGraphQL' ) || ! defined( 'WPGRAPHQL_VERSION' ) ) {
+			return false;
+		}
+		if ( true === version_compare( WPGRAPHQL_VERSION, WPGRAPHQL_FOR_ACF_VERSION_WPGRAPHQL_REQUIRED_MIN_VERSION, 'lt' ) ) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Translated error messages when the plugin cannot load. Call only from display contexts (admin_notice, graphql_debug)
+	 * so translation loads at init or later (WordPress 6.7+).
 	 *
-	 * @return array<mixed>
+	 * @return array<string>
 	 */
 	public function get_plugin_load_error_messages(): array {
 		if ( ! empty( $this->plugin_load_error_messages ) ) {
 			return $this->plugin_load_error_messages;
 		}
 
-		// Is ACF active?
 		if ( ! class_exists( 'ACF' ) ) {
 			$this->plugin_load_error_messages[] = __( 'Advanced Custom Fields must be installed and activated', 'wpgraphql-acf' );
 		}
@@ -211,10 +244,12 @@ class WPGraphQLAcf {
 			$this->plugin_load_error_messages[] = __( 'Multiple versions of WPGraphQL for ACF cannot be active at the same time', 'wpgraphql-acf' );
 		}
 
-		// Have we met the minimum version requirement?
 		if ( ! class_exists( 'WPGraphQL' ) || ! defined( 'WPGRAPHQL_VERSION' ) || true === version_compare( WPGRAPHQL_VERSION, WPGRAPHQL_FOR_ACF_VERSION_WPGRAPHQL_REQUIRED_MIN_VERSION, 'lt' ) ) {
-			// translators: %s is the version of the plugin
-			$this->plugin_load_error_messages[] = sprintf( __( 'WPGraphQL v%s or higher is required to be installed and active', 'wpgraphql-acf' ), WPGRAPHQL_FOR_ACF_VERSION_WPGRAPHQL_REQUIRED_MIN_VERSION );
+			$this->plugin_load_error_messages[] = sprintf(
+				/* translators: %s: minimum required WPGraphQL version */
+				__( 'WPGraphQL v%s or higher is required to be installed and active', 'wpgraphql-acf' ),
+				WPGRAPHQL_FOR_ACF_VERSION_WPGRAPHQL_REQUIRED_MIN_VERSION
+			);
 		}
 
 		return $this->plugin_load_error_messages;
@@ -222,9 +257,12 @@ class WPGraphQLAcf {
 
 	/**
 	 * Show admin notice to admins if this plugin is active but either ACF and/or WPGraphQL
-	 * are not active
+	 * are not active. Called on admin_init (after init), so translations are safe.
 	 */
 	public function show_admin_notice(): void {
+		if ( $this->can_load_plugin() ) {
+			return;
+		}
 		$can_load_messages = $this->get_plugin_load_error_messages();
 
 		/**
@@ -283,8 +321,12 @@ class WPGraphQLAcf {
 
 	/**
 	 * Output graphql debug messages if the plugin cannot load properly.
+	 * Called on graphql_init (after init), so translations are safe.
 	 */
 	public function show_graphql_debug_messages(): void {
+		if ( $this->can_load_plugin() ) {
+			return;
+		}
 		$messages = $this->get_plugin_load_error_messages();
 
 		if ( empty( $messages ) ) {

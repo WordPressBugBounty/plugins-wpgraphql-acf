@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit791220cfdcfd37db605db1c319f0035e
+class ComposerStaticInit70f8fe790c37f3f02caad5394f7bdd7c
 {
     public static $files = array (
         '7e91f78845d64962fd49044188232364' => __DIR__ . '/../..' . '/access-functions.php',
@@ -13,22 +13,22 @@ class ComposerStaticInit791220cfdcfd37db605db1c319f0035e
     );
 
     public static $prefixLengthsPsr4 = array (
-        'W' => 
+        'W' =>
         array (
             'WPGraphQL\\Acf\\' => 14,
         ),
-        'A' => 
+        'A' =>
         array (
             'Appsero\\' => 8,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'WPGraphQL\\Acf\\' => 
+        'WPGraphQL\\Acf\\' =>
         array (
             0 => __DIR__ . '/../..' . '/src',
         ),
-        'Appsero\\' => 
+        'Appsero\\' =>
         array (
             0 => __DIR__ . '/..' . '/appsero/client/src',
         ),
@@ -109,9 +109,9 @@ class ComposerStaticInit791220cfdcfd37db605db1c319f0035e
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit791220cfdcfd37db605db1c319f0035e::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit791220cfdcfd37db605db1c319f0035e::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit791220cfdcfd37db605db1c319f0035e::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit70f8fe790c37f3f02caad5394f7bdd7c::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit70f8fe790c37f3f02caad5394f7bdd7c::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit70f8fe790c37f3f02caad5394f7bdd7c::$classMap;
 
         }, null, ClassLoader::class);
     }

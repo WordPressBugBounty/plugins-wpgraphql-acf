@@ -432,7 +432,7 @@ class Registry {
 									return 'null';
 								}
 
-								return $context->get_loader( 'acf_options_page' )->load_deferred( $graphql_options_page['menu_slug'] );
+								return $loader->load_deferred( $graphql_options_page['menu_slug'] );
 							},
 						],
 					],
@@ -719,6 +719,9 @@ class Registry {
 	/**
 	 * Given an array of Acf Field Groups, add them to the Schema
 	 *
+	 * Can be re-entered when a clone/flexible/group field's type callback runs during schema
+	 * build and registers synthetic groups. Guard prevents runaway recursion from circular refs.
+	 *
 	 * @param array<mixed> $acf_field_groups ACF Field Groups to register to the WPGraphQL Schema
 	 * @throws \Exception
 	 */
@@ -727,6 +730,60 @@ class Registry {
 			return;
 		}
 
+		static $depth = 0;
+		$max_depth    = 15;
+		if ( $depth >= $max_depth ) {
+			graphql_debug(
+				sprintf(
+					/* translators: 1: max depth, 2: number of groups */
+					__( 'WPGraphQL for ACF: register_acf_field_groups_to_graphql re-entry guard (depth %1$d >= %2$d). Skipping %3$d group(s) to prevent recursion.', 'wpgraphql-acf' ),
+					$depth,
+					$max_depth,
+					count( $acf_field_groups )
+				)
+			);
+			return;
+		}
+
+		++$depth;
+		try {
+			$this->register_acf_field_groups_to_graphql_impl( $acf_field_groups );
+		} finally {
+			--$depth;
+		}
+	}
+
+	/**
+	 * Ensure nested types (clone, group, flexible_content) for a field group are registered
+	 * before the parent type. This prevents "non-existent Type" errors when the schema
+	 * validates field return types during introspection.
+	 *
+	 * @param array<mixed> $acf_field_group ACF Field Group to pre-register nested types for.
+	 * @throws \Exception
+	 */
+	protected function ensure_nested_types_registered( array $acf_field_group ): void {
+		$raw_fields   = $acf_field_group['sub_fields'] ?? $this->get_acf_fields( $acf_field_group );
+		$nested_types = [ 'clone', 'group', 'flexible_content' ];
+
+		foreach ( $raw_fields as $acf_field ) {
+			$field_type = $acf_field['type'] ?? '';
+			if ( ! in_array( $field_type, $nested_types, true ) ) {
+				continue;
+			}
+			if ( empty( $this->get_graphql_field_name( $acf_field ) ) ) {
+				continue;
+			}
+			$this->map_acf_field_to_graphql( $acf_field, $acf_field_group );
+		}
+	}
+
+	/**
+	 * Implementation of register_acf_field_groups_to_graphql (called with depth guard).
+	 *
+	 * @param array<mixed> $acf_field_groups ACF Field Groups to register to the WPGraphQL Schema
+	 * @throws \Exception
+	 */
+	protected function register_acf_field_groups_to_graphql_impl( array $acf_field_groups ): void {
 		// Iterate over the field groups and add them to the Schema
 		foreach ( $acf_field_groups as $acf_field_group ) {
 			$type_name = $this->get_field_group_graphql_type_name( $acf_field_group );
@@ -738,6 +795,11 @@ class Registry {
 			if ( $this->has_registered_field_group( $type_name ) ) {
 				continue;
 			}
+
+			// Pre-register nested types (clone, group, flexible_content) so they exist in the
+			// type registry before we register this type's fields. Otherwise the schema can
+			// validate a field's return type before the nested type has been registered.
+			$this->ensure_nested_types_registered( $acf_field_group );
 
 			$locations  = $this->get_graphql_locations_for_field_group( $acf_field_group, $acf_field_groups );
 			$fields     = $this->get_fields_for_field_group( $acf_field_group );

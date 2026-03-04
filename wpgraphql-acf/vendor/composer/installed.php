@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'wp-graphql/wpgraphql-acf',
-        'pretty_version' => 'v2.4.1',
-        'version' => '2.4.1.0',
-        'reference' => '9be4b7340bb25139dcee421d31724993b9d17cba',
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => '80ec27dc1295e5fcaf839221cb185da0b1bc6d6c',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -20,9 +20,9 @@
             'dev_requirement' => false,
         ),
         'wp-graphql/wpgraphql-acf' => array(
-            'pretty_version' => 'v2.4.1',
-            'version' => '2.4.1.0',
-            'reference' => '9be4b7340bb25139dcee421d31724993b9d17cba',
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '80ec27dc1295e5fcaf839221cb185da0b1bc6d6c',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
