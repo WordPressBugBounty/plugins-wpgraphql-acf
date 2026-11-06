@@ -3,7 +3,7 @@
         'name' => 'wp-graphql/wpgraphql-acf',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'd10ee47593443329a63aef16f9c787d5d567a39d',
+        'reference' => '2ccfae0095a4de5ceda96bd10f981e95675b26d7',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -22,7 +22,7 @@
         'wp-graphql/wpgraphql-acf' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'd10ee47593443329a63aef16f9c787d5d567a39d',
+            'reference' => '2ccfae0095a4de5ceda96bd10f981e95675b26d7',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
