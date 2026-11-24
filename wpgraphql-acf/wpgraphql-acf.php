@@ -4,7 +4,7 @@
  * Description: WPGraphQL for ACF seamlessly integrates Advanced Custom Fields with WPGraphQL.
  * Author: WPGraphQL
  * Author URI: https://www.wpgraphql.com
- * Version: 3.2.1
+ * Version: 3.3.0
  * Text Domain: wpgraphql-acf
  * Requires PHP: 7.3
  * Requires at least: 5.9
@@ -34,7 +34,7 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 }
 
 if ( ! defined( 'WPGRAPHQL_FOR_ACF_VERSION' ) ) {
-	define( 'WPGRAPHQL_FOR_ACF_VERSION', '3.2.1' );
+	define( 'WPGRAPHQL_FOR_ACF_VERSION', '3.3.0' );
 }
 
 if ( ! defined( 'WPGRAPHQL_FOR_ACF_VERSION_WPGRAPHQL_REQUIRED_MIN_VERSION' ) ) {
@@ -163,11 +163,17 @@ add_filter(
 			$url
 		);
 
+		// The copy sent to the WPGraphQL team leaves out the site's admin email address and an
+		// administrator's name. Usage data doesn't need them, and nothing on telemetry.wpgraphql.com
+		// should treat them as contact details. Appsero's own request is sent unchanged.
+		unset( $body['admin_email'], $body['first_name'], $body['last_name'] );
+
 		wp_remote_post(
 			$mirror,
 			array_merge(
 				$args,
 				[
+					'body'     => $body,
 					'blocking' => false,
 					'timeout'  => 3,
 				]

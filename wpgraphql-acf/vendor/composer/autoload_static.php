@@ -39,6 +39,7 @@ class ComposerStaticInite43dab7c88aca29f1b03a31dba7944a8
         'Appsero\\Insights' => __DIR__ . '/..' . '/appsero/client/src/Insights.php',
         'Appsero\\License' => __DIR__ . '/..' . '/appsero/client/src/License.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'WPGraphQL\\Acf\\AccessControl' => __DIR__ . '/../..' . '/src/AccessControl.php',
         'WPGraphQL\\Acf\\AcfGraphQLFieldResolver' => __DIR__ . '/../..' . '/src/AcfGraphQLFieldResolver.php',
         'WPGraphQL\\Acf\\AcfGraphQLFieldType' => __DIR__ . '/../..' . '/src/AcfGraphQLFieldType.php',
         'WPGraphQL\\Acf\\Admin\\OptionsPageRegistration' => __DIR__ . '/../..' . '/src/Admin/OptionsPageRegistration.php',

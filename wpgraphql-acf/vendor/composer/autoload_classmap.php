@@ -10,6 +10,7 @@ return array(
     'Appsero\\Insights' => $vendorDir . '/appsero/client/src/Insights.php',
     'Appsero\\License' => $vendorDir . '/appsero/client/src/License.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
+    'WPGraphQL\\Acf\\AccessControl' => $baseDir . '/src/AccessControl.php',
     'WPGraphQL\\Acf\\AcfGraphQLFieldResolver' => $baseDir . '/src/AcfGraphQLFieldResolver.php',
     'WPGraphQL\\Acf\\AcfGraphQLFieldType' => $baseDir . '/src/AcfGraphQLFieldType.php',
     'WPGraphQL\\Acf\\Admin\\OptionsPageRegistration' => $baseDir . '/src/Admin/OptionsPageRegistration.php',
